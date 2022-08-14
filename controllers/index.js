@@ -1,4 +1,4 @@
-const { body, validationResult, matchedData } = require('express-validator');
+const { body, validationResult, matchedData, query } = require('express-validator');
 const hero = require("../models/hero");
 
 
@@ -31,7 +31,7 @@ const hero_stats_validator = [
     invincible_validator,
     body()
         .not()
-        .custom((val) => Object.keys(val).length > 6)
+        .custom((val) => Object.keys(val).length > 5)
         .withMessage('no extra field allowed')
 ];
 
@@ -40,25 +40,54 @@ exports.set_hero_stats = [
     (req, res) => {
         let errors = validationResult(req);
         if (!errors.isEmpty()) {
-            res.json(errors.array());
+            res.json({ errors: errors.array() });
             return;
         }
         try {
-            let id = hero.create(matchedData(req));
-            res.send({
+            let id = hero.create(req.body);
+            res.json({
                 id
-            })
+            });
         } catch (e) {
-            res.send({
+            res.json({
                 msg: e.message
-            })
+            });
         }
     }
 ]
 
-exports.get_hero_stats = [(req, res) => {
-    res.send('NOT IMPLEMENTED');
-}]
+const id_validator = query('id')
+    .not()
+    .isEmpty()
+    .withMessage('id required')
+    .bail()
+    .isInt({ min: 1 })
+    .withMessage('id must be integer greater than 0');
+
+exports.get_hero_stats = [
+    id_validator,
+    (req, res) => {
+        let errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            res.json({ errors: errors.array() });
+            return;
+        }
+        try {
+            let data = hero.get(matchedData(req).id);
+            if (data === undefined) {
+                res.json({
+                    msg: "hero not found"
+                });
+                return;
+            }
+            res.json(data);
+        } catch (e) {
+            res.json({
+                msg: e.message
+            });
+        }
+    }
+]
 
 exports.upload_hero_image = (req, res) => {
     res.send('NOT IMPLEMENTED');
