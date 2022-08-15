@@ -1,5 +1,8 @@
 const { body, validationResult, matchedData, query } = require('express-validator');
 const hero = require("../models/hero");
+const multer  = require('multer')
+const upload = multer({ dest: 'uploads/', limits: { fileSize: 1024 * 1024 } });
+const { readFile } = require('fs');
 
 
 const name_validator = body('name')
@@ -80,7 +83,13 @@ exports.get_hero_stats = [
                 });
                 return;
             }
-            res.json(data);
+            res.json({
+                name: data.name,
+                dexterity: data.dexterity,
+                strength: data.strength,
+                intellect: data.intellect,
+                invincible: data.invincible,
+            });
         } catch (e) {
             res.json({
                 msg: e.message
@@ -89,10 +98,59 @@ exports.get_hero_stats = [
     }
 ]
 
-exports.upload_hero_image = (req, res) => {
-    res.send('NOT IMPLEMENTED');
-}
+exports.upload_hero_image = [
+    upload.single('hero_image'),
+    (req, res) => {
+        let errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            res.json({ errors: errors.array() });
+            return;
+        }
+        try {
+            let data = hero.get(req.body.id);
+            if (data === undefined) {
+                res.json({ errors: [ { msg: "no hero with such id" } ] });
+                return;
+            }
+            data.image = req.file;
+            hero.update(req.body.id, req.file);
+            res.json({ msg: "success" });
+        } catch (e) {
+            res.json({
+                msg: e.message
+            });
+        }
+    }
+]
 
-exports.get_hero_image = (req, res) => {
-    res.send('NOT IMPLEMENTED');
-}
+exports.get_hero_image = [
+    id_validator,
+    (req, res) => {
+        let errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            res.json({ errors: errors.array() });
+            return;
+        }
+        try {
+            let data = hero.get(req.query.id);
+            if (data === undefined) {
+                res.json({ errors: [ { msg: "no hero with such id" } ] });
+                return;
+            }
+            if (data.image === undefined) {
+                res.json({ errors: [ { msg: "hero has no image" } ] });
+                return;
+            }
+            res.download(data.image.path, data.image.originalname, (err) => {
+                if (err) {
+                res.status(500).send({
+                    message: "Could not download the file. " + err,
+                });
+                }
+            });
+        } catch (e) {
+            res.json({
+                msg: e.message
+            });
+        }
+}]

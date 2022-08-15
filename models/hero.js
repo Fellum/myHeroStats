@@ -5,6 +5,9 @@ module.exports = {
     },
     create: (hero) => {
         return data.push(hero);
+    },
+    update: (key, hero) => {
+        data[key] = hero;
     }
 }
 
