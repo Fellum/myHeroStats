@@ -1,13 +1,13 @@
-const data = [];
+let data = null;
 module.exports = {
-    get: (key) => {
-        return data[key - 1];
+    get: () => {
+        return data;
     },
     create: (hero) => {
-        return data.push(hero);
+        return data = Object.assign({}, hero);
     },
-    update: (key, hero) => {
-        data[key] = hero;
+    update: (hero) => {
+        return data = Object.assign({}, hero);
     }
 }
 
